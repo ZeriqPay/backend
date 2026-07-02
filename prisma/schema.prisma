@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String
+  username      String   @unique
+  avatar        String?
+  balance       Decimal  @default(0) @db.Decimal(18, 8)
+  role          Role     @default(USER)
+  tokenVersion  Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions      Session[]
+  transactions  Transaction[]
+  withdraws     Withdraw[]
+  affiliateCode AffiliateCode?
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Transaction {
+  id        String            @id @default(uuid())
+  userId    String
+  amount    Decimal           @db.Decimal(18, 8)
+  type      TransactionType
+  status    TransactionStatus @default(PENDING)
+  createdAt DateTime          @default(now())
+  user      User              @relation(fields: [userId], references: [id])
+}
+
+model Withdraw {
+  id        String         @id @default(uuid())
+  userId    String
+  amount    Decimal        @db.Decimal(18, 8)
+  address   String
+  status    WithdrawStatus @default(PENDING)
+  createdAt DateTime       @default(now())
+  user      User           @relation(fields: [userId], references: [id])
+}
+
+model AffiliateCode {
+  id     String @id @default(uuid())
+  code   String @unique
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAW
+  TRANSFER
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum WithdrawStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
